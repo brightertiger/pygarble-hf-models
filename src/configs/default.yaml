@@ -1,0 +1,44 @@
+# Configuration file for sentence transformer fine-tuning
+
+# Model configuration
+model:
+  name: "sentence-transformers/all-MiniLM-L6-v2"  # Base model to fine-tune
+  max_length: 512
+  dropout: 0.1
+
+# Training configuration
+training:
+  batch_size: 16
+  learning_rate: 2e-5
+  num_epochs: 3
+  warmup_steps: 100
+  weight_decay: 0.01
+  gradient_clip_val: 1.0
+  accumulate_grad_batches: 1
+
+# Data configuration
+data:
+  train_file: "data/train.csv"
+  val_file: "data/val.csv"
+  test_file: "data/test.csv"
+  text_column: "text"
+  label_column: "label"
+  val_split: 0.2
+
+# Hugging Face configuration
+huggingface:
+  repo_name: "your-username/sentence-transformer-binary-classifier"
+  push_to_hub: true
+  private: false
+
+# Logging configuration
+logging:
+  use_wandb: false
+  project_name: "sentence-transformer-finetuning"
+  log_every_n_steps: 50
+
+# Hardware configuration
+hardware:
+  num_workers: 4
+  precision: "16-mixed"  # Options: 32, 16, 16-mixed, bf16-mixed
+  devices: "auto"  # Options: "auto", 1, [0, 1], etc.

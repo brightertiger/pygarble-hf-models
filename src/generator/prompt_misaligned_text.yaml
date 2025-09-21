@@ -1,0 +1,101 @@
+name: "misaligned_text_scenario"
+description: "Generate massively misaligned jumbled up text from PDF parsing"
+model: "gemini-2.5-flash"
+temperature: 0.9
+max_tokens: 8000
+
+prompt: |
+  You are simulating the output of a PDF parsing tool that completely fails to maintain text alignment and structure, resulting in massively jumbled and misaligned text.
+  
+  Generate realistic PDF parsing output that represents:
+  - Text that appears in completely wrong order
+  - Sentences broken mid-word and scattered across lines
+  - Paragraphs mixed up with headers and footers
+  - Text flowing in wrong directions (vertical text read horizontally)
+  - Multiple columns of text merged into one chaotic stream
+  - Words split across lines in nonsensical ways
+  - Headers appearing in the middle of paragraphs
+  
+  The output should simulate ONE PAGE from any of these domains with severely misaligned text from parsing failures where:
+  - Document structure is completely lost
+  - Text order is scrambled beyond recognition
+  - Multiple text elements are merged chaotically
+  - Reading flow is completely disrupted
+  - Some words are readable but context is lost
+  
+  Generate jumbled text from any of these domains:
+  - Financial documents: Scrambled financial statements, mixed up earnings data, jumbled balance sheet items
+  - Legal documents: Disordered legal clauses, mixed up case citations, scrambled contract terms
+  - Scientific articles: Jumbled research methodology, scrambled data tables, mixed up citations
+  - General documents: Chaotic business reports, scrambled employee information, jumbled project details
+  
+  Make it realistic - simulate what happens when PDF layout analysis fails completely, using domain-appropriate terminology that gets scrambled. The output should represent approximately one page worth of jumbled text content.
+
+  IMPORTANT: You must respond with valid JSON only. Return exactly 10 examples in the following format:
+  {
+    "examples": [
+      {
+        "domain": "financial|legal|scientific|general",
+        "page_text": "The jumbled text content here..."
+      },
+      {
+        "domain": "financial|legal|scientific|general", 
+        "page_text": "The jumbled text content here..."
+      }
+      // ... 8 more examples
+    ]
+  }
+  
+  Do not include any text before or after the JSON. Return only the JSON object.
+
+output_format: "json"
+json_schema:
+  examples: "array of 10 objects, each with domain and page_text keys"
+  domain: "string (one of: financial, legal, scientific, general)"
+  page_text: "string (the jumbled text content)"
+examples:
+  - |
+    {
+      "examples": [
+        {
+          "domain": "scientific",
+          "page_text": "Introduction Methodology Results Conclusion Discussion References Appendix A Appendix B Appendix C Appendix D Appendix E Appendix F Appendix G Appendix H Appendix I Appendix J Appendix K Appendix L Appendix M Appendix N Appendix O Appendix P Appendix Q Appendix R Appendix S Appendix T Appendix U Appendix V Appendix W Appendix X Appendix Y Appendix Z Appendix AA Appendix BB Appendix CC Appendix DD Appendix EE Appendix FF Appendix GG Appendix HH Appendix II Appendix JJ Appendix KK Appendix LL Appendix MM Appendix NN Appendix OO Appendix PP Appendix QQ Appendix RR Appendix SS Appendix TT Appendix UU Appendix VV Appendix WW Appendix XX Appendix YY Appendix ZZ Appendix AAA Appendix BBB Appendix CCC Appendix DDD Appendix EEE Appendix FFF Appendix GGG Appendix HHH Appendix III Appendix JJJ Appendix KKK Appendix LLL Appendix MMM Appendix NNN Appendix OOO Appendix PPP Appendix QQQ Appendix RRR Appendix SSS Appendix TTT Appendix UUU Appendix VVV Appendix WWW Appendix XXX Appendix YYY Appendix ZZZ Appendix AAAA Appendix BBBB Appendix CCCC Appendix DDDD Appendix EEEE Appendix FFFF Appendix GGGG Appendix HHHH Appendix IIII Appendix JJJJ Appendix KKKK Appendix LLLL Appendix MMMM Appendix NNNN Appendix OOOO Appendix PPPP Appendix QQQQ Appendix RRRR Appendix SSSS Appendix TTTT Appendix UUUU Appendix VVVV Appendix WWWW Appendix XXXX Appendix YYYY Appendix ZZZZ Appendix AAAAA Appendix BBBBB Appendix CCCCC Appendix DDDDD Appendix EEEEE Appendix FFFFF Appendix GGGGG Appendix HHHHH Appendix IIIII Appendix JJJJJ Appendix KKKKK Appendix LLLLL Appendix MMMMM Appendix NNNNN Appendix OOOOO Appendix PPPPP Appendix QQQQQ Appendix RRRRR Appendix SSSSS Appendix TTTTT Appendix UUUUU Appendix VVVVV Appendix WWWWW Appendix XXXXX Appendix YYYYY Appendix ZZZZZ"
+        },
+        {
+          "domain": "financial",
+          "page_text": "Revenue Recognition Assets Liabilities Equity Cash Flow Statement Income Statement Balance Sheet Accounts Receivable Accounts Payable Inventory Depreciation Amortization Operating Expenses Cost of Goods Sold Gross Profit Net Income Earnings Per Share Dividend Payout Ratio Return on Investment Debt to Equity Ratio Current Ratio Quick Ratio Working Capital Capital Expenditure Free Cash Flow EBITDA"
+        },
+        {
+          "domain": "legal",
+          "page_text": "Contract Agreement Terms Conditions Parties Effective Date Termination Breach Default Remedy Damages Specific Performance Injunction Restraining Order Preliminary Injunction Permanent Injunction Temporary Restraining Order Class Action Lawsuit Settlement Agreement Release Waiver Covenant Not to Sue Mutual Release General Release"
+        },
+        {
+          "domain": "general",
+          "page_text": "Executive Summary Project Overview Objectives Scope Deliverables Timeline Budget Resources Team Members Stakeholders Risk Assessment Quality Assurance Testing Implementation Deployment Maintenance Support Documentation Training User Manual Technical Specifications Requirements Analysis System Design Architecture Database Design User Interface Design"
+        },
+        {
+          "domain": "financial",
+          "page_text": "Fiscal Year Quarter Annual Report SEC Filing 10-K 10-Q 8-K Proxy Statement Form 4 Insider Trading Material Adverse Change Force Majeure Termination Clause Confidentiality Agreement Non-Disclosure Agreement Intellectual Property Rights Indemnification Limitation of Liability Governing Law Jurisdiction Arbitration Mediation"
+        },
+        {
+          "domain": "legal",
+          "page_text": "Supreme Court District Court Appeals Court Circuit Court Federal Court State Court Municipal Court Bankruptcy Court Tax Court Patent Court Trademark Court Copyright Court Admiralty Court Military Court Court of Claims Court of Appeals Court of Common Pleas Court of General Sessions"
+        },
+        {
+          "domain": "scientific",
+          "page_text": "Abstract Introduction Background Literature Review Methodology Experimental Design Data Collection Statistical Analysis Results Discussion Conclusion References Acknowledgments Author Contributions Conflict of Interest Funding Sources Ethical Approval Institutional Review Board Informed Consent Data Availability Statement Supplementary Materials"
+        },
+        {
+          "domain": "general",
+          "page_text": "Human Resources Employee Relations Performance Management Compensation Benefits Payroll Recruitment Selection Onboarding Training Development Career Planning Succession Planning Organizational Development Change Management Process Improvement Quality Management Customer Service Client Relations Vendor Management Procurement Supply Chain Logistics"
+        },
+        {
+          "domain": "financial",
+          "page_text": "Market Analysis Industry Trends Competitive Landscape Market Share Revenue Growth Profit Margins Cost Structure Pricing Strategy Customer Acquisition Customer Retention Market Penetration Product Development Innovation Technology Investment Research Development"
+        },
+        {
+          "domain": "legal",
+          "page_text": "Legal Precedent Case Law Statutory Law Regulatory Framework Compliance Requirements Risk Management Due Diligence Legal Opinion Attorney Client Privilege Confidentiality Professional Responsibility Ethical Standards Bar Association Continuing Legal Education"
+        }
+      ]
+    }

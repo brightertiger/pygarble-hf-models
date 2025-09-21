@@ -1,0 +1,99 @@
+name: "normal_parsing_scenario"
+description: "Generate normal PDF parsing output with correct English paragraphs"
+model: "gemini-2.5-flash"
+temperature: 0.7
+max_tokens: 8000
+
+prompt: |
+  You are simulating the output of a PDF parsing tool (like PyPDF) that successfully extracts clean, readable text from a well-formatted PDF document.
+  
+  Generate realistic PDF parsing output that represents:
+  - Clean, properly formatted English text
+  - Well-structured paragraphs with proper spacing
+  - Correct punctuation and grammar
+  - Logical text flow and coherence
+  - Standard document formatting (headers, paragraphs, etc.)
+  
+  The output should simulate ONE PAGE from any of these domains that was parsed correctly. Include:
+  - Document title/header
+  - Multiple paragraphs of coherent text
+  - Proper line breaks and spacing
+  - Standard punctuation and formatting
+  - Content that would realistically fit on a single page
+  
+  Generate content from any of these domains:
+  - Financial documents: Annual reports, financial statements, earnings calls, investment prospectuses
+  - Legal documents: Contracts, legal briefs, court filings, regulatory compliance documents
+  - Scientific articles: Research papers, academic journals, technical reports, methodology sections
+  - General documents: Business reports, manuals, newsletters, correspondence, marketing materials
+  
+  Make it realistic and varied - simulate one page of different document types with domain-appropriate terminology and structure. The output should be approximately 300-500 words, typical of a single page.
+
+  IMPORTANT: You must respond with valid JSON only. Return exactly 10 examples in the following format:
+  {
+    "examples": [
+      {
+        "domain": "financial|legal|scientific|general",
+        "page_text": "The actual page content here..."
+      },
+      {
+        "domain": "financial|legal|scientific|general", 
+        "page_text": "The actual page content here..."
+      }
+      // ... 8 more examples
+    ]
+  }
+  
+  Do not include any text before or after the JSON. Return only the JSON object.
+
+output_format: "json"
+json_schema:
+  examples: "array of 10 objects, each with domain and page_text keys"
+  domain: "string (one of: financial, legal, scientific, general)"
+  page_text: "string (the parsed page content)"
+examples:
+  - |
+    {
+      "examples": [
+        {
+          "domain": "financial",
+          "page_text": "Annual Report 2023\n\nExecutive Summary\n\nThis document presents the annual performance review for our organization during the fiscal year 2023. Our company has demonstrated remarkable growth across all key performance indicators, achieving a 15% increase in revenue compared to the previous year.\n\nThe financial results show strong performance in both domestic and international markets. Our core business units have exceeded expectations, with particular success in the technology sector where we launched three new product lines.\n\nKey achievements include the successful completion of our digital transformation initiative, which has improved operational efficiency by 25%. Additionally, our sustainability efforts have resulted in a 30% reduction in carbon emissions across all facilities."
+        },
+        {
+          "domain": "legal",
+          "page_text": "Contract Agreement\n\nTerms and Conditions\n\nThis Agreement is entered into between the parties as of the Effective Date. The parties agree to the following terms and conditions governing their business relationship. Any disputes arising from this agreement shall be resolved through binding arbitration in accordance with the rules of the American Arbitration Association.\n\nConfidentiality and Non-Disclosure\n\nEach party acknowledges that confidential information may be disclosed during the course of this agreement. Such information shall remain strictly confidential and shall not be disclosed to third parties without prior written consent. This obligation shall survive termination of this agreement for a period of five years."
+        },
+        {
+          "domain": "scientific",
+          "page_text": "Research Methodology\n\nExperimental Design\n\nThis study employed a randomized controlled trial design with 200 participants across four treatment groups. Data collection occurred over 12 months using validated instruments including the Beck Depression Inventory and Hamilton Anxiety Rating Scale. Statistical analysis was performed using SPSS version 28.0.\n\nSample Characteristics\n\nParticipants were recruited from three major metropolitan areas and ranged in age from 18 to 65 years. Inclusion criteria required a minimum score of 14 on the Hamilton Anxiety Rating Scale. Exclusion criteria included current substance abuse and severe psychiatric comorbidities."
+        },
+        {
+          "domain": "general",
+          "page_text": "Employee Handbook\n\nCompany Policies\n\nWelcome to our organization. This handbook outlines the policies and procedures that govern our workplace. All employees are expected to adhere to these guidelines to maintain a professional and productive work environment. Questions about any policy should be directed to Human Resources.\n\nCode of Conduct\n\nAll employees are expected to maintain the highest standards of professional conduct. This includes treating colleagues with respect, maintaining confidentiality of sensitive information, and adhering to all applicable laws and regulations. Violations of this code may result in disciplinary action up to and including termination."
+        },
+        {
+          "domain": "financial",
+          "page_text": "Financial Statement Analysis\n\nRevenue Recognition\n\nUnder ASC 606, revenue is recognized when control of goods or services is transferred to customers. The company recognizes revenue at the point of sale for retail transactions and over time for subscription services based on the percentage of completion method.\n\nBalance Sheet Analysis\n\nTotal assets increased by 12% year-over-year, primarily driven by growth in accounts receivable and inventory. Current liabilities remained stable, while long-term debt decreased by 8% due to scheduled principal payments. The company maintains a healthy current ratio of 2.1, indicating strong short-term liquidity."
+        },
+        {
+          "domain": "legal",
+          "page_text": "Legal Memorandum\n\nCase Analysis\n\nThe court's decision in Smith v. Jones establishes precedent for future cases involving intellectual property disputes. The three-prong test requires: (1) substantial similarity, (2) access to the original work, and (3) improper appropriation. This standard has been consistently applied across federal circuits.\n\nImplications for Future Litigation\n\nThis ruling significantly impacts how courts evaluate copyright infringement claims in the digital age. The burden of proof remains with the plaintiff to demonstrate all three elements, with particular emphasis on the substantial similarity requirement."
+        },
+        {
+          "domain": "scientific",
+          "page_text": "Abstract\n\nBackground: The prevalence of antibiotic resistance has increased significantly over the past decade, posing a major threat to public health. This study investigates the molecular mechanisms underlying resistance development in Staphylococcus aureus isolates collected from clinical samples.\n\nMethods: We analyzed 150 clinical isolates using whole-genome sequencing and phenotypic susceptibility testing. Resistance genes were identified using bioinformatics tools, and expression levels were quantified using qRT-PCR. Statistical analysis was performed to identify significant associations between genetic markers and resistance phenotypes."
+        },
+        {
+          "domain": "general",
+          "page_text": "Project Status Report\n\nCurrent Progress\n\nThe implementation of the new customer relationship management system is proceeding according to schedule. Phase 1 has been completed successfully, with all user training sessions completed and initial feedback being positive. Phase 2 is scheduled to begin next month.\n\nKey Milestones Achieved\n\n- System installation completed on schedule\n- User acceptance testing passed with 95% approval rate\n- Data migration completed without data loss\n- Training materials finalized and distributed\n- Support documentation updated and published"
+        },
+        {
+          "domain": "financial",
+          "page_text": "Investment Prospectus\n\nCompany Overview\n\nOur company is a leading provider of innovative technology solutions serving enterprise clients across multiple industries. Founded in 2010, we have grown from a startup to a publicly traded company with operations in 15 countries and over 2,000 employees worldwide.\n\nFinancial Highlights\n\nRevenue has grown at a compound annual growth rate of 25% over the past five years, reaching $500 million in the most recent fiscal year. Our gross margins have consistently exceeded 70%, reflecting our focus on high-value software solutions and efficient operations."
+        },
+        {
+          "domain": "legal",
+          "page_text": "Regulatory Compliance Document\n\nOverview\n\nThis document outlines the company's compliance framework for meeting regulatory requirements across all jurisdictions where we operate. Our compliance program is designed to ensure adherence to applicable laws, regulations, and industry standards while maintaining operational efficiency.\n\nKey Compliance Areas\n\nData Protection: We maintain comprehensive data protection measures in accordance with GDPR, CCPA, and other applicable privacy regulations. Financial Reporting: Our financial reporting processes comply with SEC requirements and international accounting standards. Environmental: We adhere to environmental regulations and maintain sustainability certifications across all facilities."
+        }
+      ]
+    }

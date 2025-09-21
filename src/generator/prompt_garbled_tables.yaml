@@ -1,0 +1,100 @@
+name: "garbled_tables_scenario"
+description: "Generate garbled up tables from PDF parsing"
+model: "gemini-2.5-flash"
+temperature: 0.8
+max_tokens: 8000
+
+prompt: |
+  You are simulating the output of a PDF parsing tool that struggles with table extraction, resulting in garbled, misaligned, or corrupted table data.
+  
+  Generate realistic PDF parsing output that represents:
+  - Tables with misaligned columns and rows
+  - Mixed up cell contents and headers
+  - Missing or duplicated table elements
+  - Text that should be in separate cells but got merged
+  - Numbers and text that got jumbled together
+  - Partial table extraction with missing borders/structure
+  
+  The output should simulate ONE PAGE from any of these domains with garbled table data from common table parsing failures where:
+  - Column headers are mixed with data rows
+  - Cell boundaries are lost or misinterpreted
+  - Text flows incorrectly across table cells
+  - Numbers and text get concatenated inappropriately
+  - Table structure is partially preserved but corrupted
+  
+  Generate garbled table data from any of these domains:
+  - Financial documents: Financial statements, balance sheets, income statements, cash flow tables
+  - Legal documents: Case citations, legal precedents, regulatory compliance tables, fee schedules
+  - Scientific articles: Research data tables, statistical results, experimental parameters, methodology tables
+  - General documents: Employee directories, project timelines, budget allocations, performance metrics
+  
+  Make it realistic - simulate what happens when PDF tables are parsed as plain text without proper table recognition, using domain-appropriate data and terminology. The output should represent approximately one page worth of garbled table content.
+
+  IMPORTANT: You must respond with valid JSON only. Return exactly 10 examples in the following format:
+  {
+    "examples": [
+      {
+        "domain": "financial|legal|scientific|general",
+        "page_text": "The garbled table content here..."
+      },
+      {
+        "domain": "financial|legal|scientific|general", 
+        "page_text": "The garbled table content here..."
+      }
+      // ... 8 more examples
+    ]
+  }
+  
+  Do not include any text before or after the JSON. Return only the JSON object.
+
+output_format: "json"
+json_schema:
+  examples: "array of 10 objects, each with domain and page_text keys"
+  domain: "string (one of: financial, legal, scientific, general)"
+  page_text: "string (the garbled table content)"
+examples:
+  - |
+    {
+      "examples": [
+        {
+          "domain": "financial",
+          "page_text": "Q1 Sales ReportProduct NameRevenueUnits SoldProduct A$1250001500Product B$89000750Product C$1560002200Product D$67000890Product E$980001200Product F$1340001800Product G$45000650Product H$780001100Product I$920001350Product J$1120001600Total Revenue$1,001,00012,940"
+        },
+        {
+          "domain": "legal",
+          "page_text": "Case CitationsCase NameCourtYearRulingSmith v. JonesSupreme Court2023AffirmedBrown v. WhiteDistrict Court2022ReversedDavis v. MillerAppeals Court2021RemandedWilson v. JohnsonFederal Court2020DismissedTaylor v. AndersonState Court2019Settled"
+        },
+        {
+          "domain": "scientific",
+          "page_text": "Experimental ResultsTreatment GroupSample SizeMean ScoreStandard DeviationControl5025.34.2Treatment A5032.15.8Treatment B5028.74.9Treatment C5035.26.1Placebo5022.83.7Active Control5027.95.2"
+        },
+        {
+          "domain": "general",
+          "page_text": "Employee DirectoryNameDepartmentPhoneEmailJohn SmithIT555-0123john@company.comSarah JohnsonHR555-0124sarah@company.comMike BrownSales555-0125mike@company.comLisa DavisMarketing555-0126lisa@company.comTom WilsonFinance555-0127tom@company.com"
+        },
+        {
+          "domain": "financial",
+          "page_text": "Balance SheetAssetsLiabilitiesCash$500000Accounts Payable$200000Accounts Receivable$300000Long-term Debt$800000Inventory$150000Total Liabilities$1000000Total Assets$950000Equity-$50000"
+        },
+        {
+          "domain": "legal",
+          "page_text": "Fee ScheduleServiceHourly RateCourt Filing$150Document Review$200Research$175Deposition$300Trial Preparation$250Motion Writing$180Appeal Brief$400Settlement Negotiation$225"
+        },
+        {
+          "domain": "scientific",
+          "page_text": "Statistical AnalysisVariableCorrelationSignificancep-valueAge0.45<0.001Education0.320.02Income0.67<0.001Experience0.280.05Gender-0.120.15Location0.230.08Marital Status0.180.12"
+        },
+        {
+          "domain": "general",
+          "page_text": "Project TimelineTaskStart DateEnd DateStatusPlanning2023-01-012023-01-15CompletedDevelopment2023-01-162023-03-15In ProgressTesting2023-03-162023-04-01PendingDeployment2023-04-022023-04-15PendingMaintenance2023-04-162023-12-31Scheduled"
+        },
+        {
+          "domain": "financial",
+          "page_text": "Income StatementRevenue$2000000Cost of Goods Sold$1200000Gross Profit$800000Operating Expenses$600000Net Income$200000Earnings Per Share$2.00Dividend Per Share$0.50Retained Earnings$150000"
+        },
+        {
+          "domain": "legal",
+          "page_text": "Court CalendarCase NumberPlaintiffDefendantDateStatusCV-2023-001Smith CorpJones LLC2023-03-15ScheduledCV-2023-002Brown IncWhite Ltd2023-03-22PostponedCV-2023-003Davis CoMiller LLC2023-03-29CompletedCV-2023-004Wilson CorpAnderson Inc2023-04-05Pending"
+        }
+      ]
+    }

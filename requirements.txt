@@ -11,3 +11,5 @@ wandb>=0.15.0
 huggingface-hub>=0.16.0
 accelerate>=0.20.0
 evaluate>=0.4.0
+google-generativeai>=0.3.0
+PyYAML>=6.0

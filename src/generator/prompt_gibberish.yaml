@@ -1,0 +1,101 @@
+name: "gibberish_scenario"
+description: "Generate total gibberish due to non-ASCII characters, binary images"
+model: "gemini-2.5-flash"
+temperature: 1.0
+max_tokens: 8000
+
+prompt: |
+  You are simulating the output of a PDF parsing tool that encounters non-ASCII characters, binary data, images, or corrupted text, resulting in complete gibberish.
+  
+  Generate realistic PDF parsing output that represents:
+  - Non-ASCII characters mixed with readable text
+  - Binary data represented as random characters
+  - Image data interpreted as text
+  - Corrupted encoding causing character substitution
+  - Mixed character sets and encodings
+  - Random symbols and special characters
+  - Partial text mixed with unreadable content
+  
+  The output should simulate ONE PAGE from any of these domains with parsing failures where:
+  - Text encoding is completely wrong
+  - Binary data is interpreted as text
+  - Images are processed as character data
+  - Multiple character encodings are mixed
+  - Some readable words appear among gibberish
+  
+  Generate gibberish from any of these domains:
+  - Financial documents: Corrupted financial data, mixed up currency symbols, garbled account numbers
+  - Legal documents: Scrambled legal citations, corrupted case numbers, mixed up legal symbols
+  - Scientific articles: Corrupted research data, garbled mathematical formulas, mixed up scientific notation
+  - General documents: Scrambled business data, corrupted contact information, garbled technical specifications
+  
+  Make it realistic - simulate what happens when PDF contains non-text elements or corrupted encoding, with domain-appropriate terms appearing among the gibberish. The output should represent approximately one page worth of corrupted text content.
+
+  IMPORTANT: You must respond with valid JSON only. Return exactly 10 examples in the following format:
+  {
+    "examples": [
+      {
+        "domain": "financial|legal|scientific|general",
+        "page_text": "The corrupted text content here..."
+      },
+      {
+        "domain": "financial|legal|scientific|general", 
+        "page_text": "The corrupted text content here..."
+      }
+      // ... 8 more examples
+    ]
+  }
+  
+  Do not include any text before or after the JSON. Return only the JSON object.
+
+output_format: "json"
+json_schema:
+  examples: "array of 10 objects, each with domain and page_text keys"
+  domain: "string (one of: financial, legal, scientific, general)"
+  page_text: "string (the corrupted text content)"
+examples:
+  - |
+    {
+      "examples": [
+        {
+          "domain": "general",
+          "page_text": "��PDF-1.4��%âãÏÓ��1 0 obj<< /Type /Catalog /Pages 2 0 R >>endobj��2 0 obj<< /Type /Pages /Kids [3 0 R] /Count 1 >>endobj��3 0 obj<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>endobj��4 0 obj<< /Length 44 >>stream BT /F1 12 Tf 100 700 Td (Hello World) Tj ET endstream endobj��xref 0 5 0000000000 65535 f 0000000009 00000 n 0000000058 00000 n 0000000115 00000 n 0000000204 00000 n trailer<< /Size 5 /Root 1 0 R >>startxref 298 %%EOF"
+        },
+        {
+          "domain": "financial",
+          "page_text": "��$1,250,000��%âãÏÓ��Revenue��%âãÏÓ��$890,000��%âãÏÓ��Expenses��%âãÏÓ��$360,000��%âãÏÓ��Net Income��%âãÏÓ��$2.50��%âãÏÓ��EPS��%âãÏÓ��15.2%��%âãÏÓ��ROI��%âãÏÓ��$500,000��%âãÏÓ��Cash Flow��%âãÏÓ��$1,000,000��%âãÏÓ��Assets��%âãÏÓ��$750,000��%âãÏÓ��Liabilities"
+        },
+        {
+          "domain": "legal",
+          "page_text": "��Smith v. Jones��%âãÏÓ��Supreme Court��%âãÏÓ��2023��%âãÏÓ��Affirmed��%âãÏÓ��Brown v. White��%âãÏÓ��District Court��%âãÏÓ��2022��%âãÏÓ��Reversed��%âãÏÓ��Davis v. Miller��%âãÏÓ��Appeals Court��%âãÏÓ��2021��%âãÏÓ��Remanded��%âãÏÓ��Contract Agreement��%âãÏÓ��Terms Conditions��%âãÏÓ��Parties Effective Date"
+        },
+        {
+          "domain": "scientific",
+          "page_text": "��Abstract��%âãÏÓ��Introduction��%âãÏÓ��Background��%âãÏÓ��Literature Review��%âãÏÓ��Methodology��%âãÏÓ��Experimental Design��%âãÏÓ��Data Collection��%âãÏÓ��Statistical Analysis��%âãÏÓ��Results��%âãÏÓ��Discussion��%âãÏÓ��Conclusion��%âãÏÓ��References��%âãÏÓ��Acknowledgments��%âãÏÓ��Author Contributions"
+        },
+        {
+          "domain": "financial",
+          "page_text": "��Q1 2023��%âãÏÓ��Q2 2023��%âãÏÓ��Q3 2023��%âãÏÓ��Q4 2023��%âãÏÓ��Annual Report��%âãÏÓ��SEC Filing��%âãÏÓ��10-K��%âãÏÓ��10-Q��%âãÏÓ��8-K��%âãÏÓ��Proxy Statement��%âãÏÓ��Form 4��%âãÏÓ��Insider Trading��%âãÏÓ��Material Adverse Change"
+        },
+        {
+          "domain": "legal",
+          "page_text": "��Force Majeure��%âãÏÓ��Termination Clause��%âãÏÓ��Confidentiality Agreement��%âãÏÓ��Non-Disclosure Agreement��%âãÏÓ��Intellectual Property Rights��%âãÏÓ��Indemnification��%âãÏÓ��Limitation of Liability��%âãÏÓ��Governing Law��%âãÏÓ��Jurisdiction��%âãÏÓ��Arbitration��%âãÏÓ��Mediation"
+        },
+        {
+          "domain": "scientific",
+          "page_text": "��Hypothesis��%âãÏÓ��Null Hypothesis��%âãÏÓ��Alternative Hypothesis��%âãÏÓ��Statistical Significance��%âãÏÓ��P-value��%âãÏÓ��Confidence Interval��%âãÏÓ��Standard Deviation��%âãÏÓ��Variance��%âãÏÓ��Mean��%âãÏÓ��Median��%âãÏÓ��Mode��%âãÏÓ��Range��%âãÏÓ��Quartile��%âãÏÓ��Percentile"
+        },
+        {
+          "domain": "general",
+          "page_text": "��Executive Summary��%âãÏÓ��Project Overview��%âãÏÓ��Objectives��%âãÏÓ��Scope��%âãÏÓ��Deliverables��%âãÏÓ��Timeline��%âãÏÓ��Budget��%âãÏÓ��Resources��%âãÏÓ��Team Members��%âãÏÓ��Stakeholders��%âãÏÓ��Risk Assessment��%âãÏÓ��Quality Assurance��%âãÏÓ��Testing��%âãÏÓ��Implementation"
+        },
+        {
+          "domain": "financial",
+          "page_text": "��Balance Sheet��%âãÏÓ��Income Statement��%âãÏÓ��Cash Flow��%âãÏÓ��Accounts Receivable��%âãÏÓ��Accounts Payable��%âãÏÓ��Inventory��%âãÏÓ��Depreciation��%âãÏÓ��Amortization��%âãÏÓ��Operating Expenses��%âãÏÓ��Cost of Goods Sold��%âãÏÓ��Gross Profit��%âãÏÓ��Net Income��%âãÏÓ��Earnings Per Share"
+        },
+        {
+          "domain": "legal",
+          "page_text": "��Legal Precedent��%âãÏÓ��Case Law��%âãÏÓ��Statutory Law��%âãÏÓ��Regulatory Framework��%âãÏÓ��Compliance Requirements��%âãÏÓ��Risk Management��%âãÏÓ��Due Diligence��%âãÏÓ��Legal Opinion��%âãÏÓ��Attorney Client Privilege��%âãÏÓ��Confidentiality��%âãÏÓ��Professional Responsibility��%âãÏÓ��Ethical Standards"
+        }
+      ]
+    }

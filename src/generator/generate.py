@@ -34,7 +34,6 @@ def load_prompt_config(prompt_file: str) -> Dict[str, Any]:
         sys.exit(1)
 
 def setup_genai(api_key: str = None) -> None:
-    """Setup Google GenAI with API key."""
     if api_key:
         genai.configure(api_key=api_key)
     else:
@@ -44,10 +43,24 @@ def setup_genai(api_key: str = None) -> None:
             sys.exit(1)
         genai.configure(api_key=api_key)
 
+def load_checkpoint(prompt_name: str) -> tuple[List[Dict[str, Any]], Dict[str, int]]:
+    checkpoint_file = f"data/data/{prompt_name}_checkpoint.json"
+    if os.path.exists(checkpoint_file):
+        try:
+            with open(checkpoint_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            results = data.get('examples', [])
+            token_usage = data.get('token_usage', {'input_tokens': 0, 'output_tokens': 0, 'total_tokens': 0})
+            logger.info(f"Loaded checkpoint from {checkpoint_file} with {len(results)} examples")
+            return results, token_usage
+        except Exception as e:
+            logger.warning(f"Failed to load checkpoint {checkpoint_file}: {e}")
+            return [], {'input_tokens': 0, 'output_tokens': 0, 'total_tokens': 0}
+    return [], {'input_tokens': 0, 'output_tokens': 0, 'total_tokens': 0}
+
 def generate_content(prompt_config: Dict[str, Any], num_batches: int = 1, prompt_name: str = None) -> tuple[List[Dict[str, Any]], Dict[str, int]]:
-    """Generate content using Google GenAI."""
-    model_name = prompt_config.get('model', 'gemini-2.5-flash')
-    temperature = prompt_config.get('temperature', 0.7)
+    model_name = prompt_config.get('model', 'gemini-2.5-flash-lite')
+    temperature = prompt_config.get('temperature', 2.0)
     max_tokens = prompt_config.get('max_tokens', 8000)
     prompt_text = prompt_config.get('prompt', '')
     
@@ -61,6 +74,14 @@ def generate_content(prompt_config: Dict[str, Any], num_batches: int = 1, prompt
     all_results = []
     total_input_tokens = 0
     total_output_tokens = 0
+
+    if prompt_name:
+        loaded_results, loaded_token_usage = load_checkpoint(prompt_name)
+        if loaded_results:
+            all_results.extend(loaded_results)
+            total_input_tokens = loaded_token_usage.get('input_tokens', 0)
+            total_output_tokens = loaded_token_usage.get('output_tokens', 0)
+            logger.info(f"Resuming from checkpoint with {len(loaded_results)} existing examples")
     
     logger.info(f"Generating {num_batches} batch(es) using {model_name}...")
     logger.info(f"Prompt length: {len(prompt_text)} characters")
@@ -95,8 +116,25 @@ def generate_content(prompt_config: Dict[str, Any], num_batches: int = 1, prompt
                     logger.debug(f"Raw response: {response.text[:200]}...")
                     continue
                 if 'examples' in result:
-                    all_results.extend(result['examples'])
-                    logger.info(f"Generated {len(result['examples'])} examples")
+                    examples = result['examples']
+                    logger.info(f"Received {len(examples)} examples from model")
+                    
+                    # Validate each example has required fields
+                    valid_examples = []
+                    for i, example in enumerate(examples):
+                        if not isinstance(example, dict) or 'domain' not in example or 'page_text' not in example:
+                            logger.warning(f"Example {i+1} missing required fields (domain, page_text). Skipping.")
+                            continue
+                        if example['domain'] not in ['financial', 'legal', 'scientific', 'general']:
+                            logger.warning(f"Example {i+1} has invalid domain: {example['domain']}. Skipping.")
+                            continue
+                        valid_examples.append(example)
+                    
+                    all_results.extend(valid_examples)
+                    logger.info(f"Added {len(valid_examples)} valid examples (total: {len(all_results)})")
+                    
+                    if len(valid_examples) < len(examples):
+                        logger.warning(f"Skipped {len(examples) - len(valid_examples)} invalid examples")
                     
                     # Save checkpoint after each successful batch
                     if prompt_name:
@@ -105,7 +143,7 @@ def generate_content(prompt_config: Dict[str, Any], num_batches: int = 1, prompt
                             'output_tokens': total_output_tokens,
                             'total_tokens': total_input_tokens + total_output_tokens
                         }
-                        checkpoint_file = f"data/{prompt_name}_checkpoint_batch_{batch_num + 1}.json"
+                        checkpoint_file = f"data/data/{prompt_name}_checkpoint.json"
                         save_results(all_results, checkpoint_file, prompt_name, checkpoint_token_usage)
                         logger.info(f"Checkpoint saved: {checkpoint_file}")
                         
@@ -183,14 +221,11 @@ def main(prompt_file: str, num_batches: int, summary: bool = True):
         logger.error("No results generated. Exiting.")
         sys.exit(1)
     
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    output_file = f"data/{prompt_name}_generated_{timestamp}.json"    
-    save_results(results, output_file, prompt_name, token_usage)
     print_summary(results)
     return None
 
 if __name__ == '__main__':
-    prompt_file = 'src/generator/prompt_normal_parsing.yaml'
-    num_batches = 2000
+    prompt_file = 'src/generator/prompt_domain_specific.yaml'
+    num_batches = 1000
     summary = True
     main(prompt_file, num_batches, summary)

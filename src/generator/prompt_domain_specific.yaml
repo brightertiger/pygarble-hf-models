@@ -1,0 +1,146 @@
+name: "domain_specific_content_scenario"
+description: "Generate domain-specific content that may appear non-English due to technical symbols, equations, and specialized terminology"
+model: "gemini-2.5-flash-lite"
+temperature: 2.0
+max_tokens: 8000
+
+prompt: |
+  You are simulating the output of a PDF parsing tool that encounters domain-specific content with technical symbols, mathematical equations, algorithms, and specialized terminology that may appear non-English or difficult to parse.
+  
+  Generate realistic PDF parsing output that represents domain-specific content that may appear non-English or difficult to understand, including:
+  - Technical tables with misaligned columns and rows
+  - Mixed up cell contents and headers
+  - Missing or duplicated table elements
+  - Text that should be in separate cells but got merged
+  - Numbers and text that got jumbled together
+  - Partial table extraction with missing borders/structure
+  - Mathematical equations and formulas broken across cells
+  - Algorithm pseudocode with corrupted formatting
+  - Special symbols (∑, ∫, ±, ≤, ≥, ≠, ∞, α, β, γ, etc.) mixed with text
+  - Chemical formulas and scientific notation scattered
+  - Currency symbols and mathematical operators misplaced
+  - Code snippets and technical specifications garbled
+  - Domain-specific terminology and jargon
+  - Legal citations and statute references
+  - Scientific notation and technical abbreviations
+  
+  The output should simulate ONE PAGE from any of these domains with domain-specific content that may appear non-English or difficult to parse, where:
+  - Technical symbols and equations are mixed with regular text
+  - Specialized terminology and jargon appear without context
+  - Mathematical formulas and algorithms are fragmented
+  - Legal citations and scientific notation are scattered
+  - Code snippets and technical specifications are garbled
+  - Currency symbols and operators are misplaced
+  
+  Generate domain-specific content from any of these domains:
+  - Financial documents: Financial statements, balance sheets, income statements, cash flow tables, currency conversion tables, mathematical formulas for calculations
+  - Legal documents: Case citations, legal precedents, regulatory compliance tables, fee schedules, statute references, legal algorithms
+  - Scientific articles: Research data tables, statistical results, experimental parameters, methodology tables, mathematical equations, chemical formulas, algorithm pseudocode, scientific notation
+  - General documents: Employee directories, project timelines, budget allocations, performance metrics, technical specifications, code documentation, algorithm flows
+  
+  Make it realistic - simulate what happens when PDF documents with domain-specific content are parsed as plain text, where technical symbols, equations, and specialized terminology may appear non-English or difficult to understand. The output should represent approximately one page worth of domain-specific content.
+
+  CRITICAL REQUIREMENTS:
+  1. You MUST return exactly 10 examples - no more, no less
+  2. Each example must have ONLY two fields: "domain" and "page_text"
+  3. Domain must be one of: "financial", "legal", "scientific", or "general"
+  4. Page_text must contain the domain-specific content
+  5. Return ONLY valid JSON with no additional text or fields
+  
+  Required JSON format (exactly this structure):
+  {
+    "examples": [
+      {
+        "domain": "financial",
+        "page_text": "The domain-specific content here..."
+      },
+      {
+        "domain": "legal", 
+        "page_text": "The domain-specific content here..."
+      },
+      {
+        "domain": "scientific",
+        "page_text": "The domain-specific content here..."
+      },
+      {
+        "domain": "general",
+        "page_text": "The domain-specific content here..."
+      },
+      {
+        "domain": "financial",
+        "page_text": "The domain-specific content here..."
+      },
+      {
+        "domain": "legal",
+        "page_text": "The domain-specific content here..."
+      },
+      {
+        "domain": "scientific",
+        "page_text": "The domain-specific content here..."
+      },
+      {
+        "domain": "general",
+        "page_text": "The domain-specific content here..."
+      },
+      {
+        "domain": "financial",
+        "page_text": "The domain-specific content here..."
+      },
+      {
+        "domain": "legal",
+        "page_text": "The domain-specific content here..."
+      }
+    ]
+  }
+
+output_format: "json"
+json_schema:
+  examples: "array of 10 objects, each with domain and page_text keys"
+  domain: "string (one of: financial, legal, scientific, general)"
+  page_text: "string (the domain-specific content)"
+examples:
+  - |
+    {
+      "examples": [
+        {
+          "domain": "financial",
+          "page_text": "Currency Exchange RatesCurrencySymbolRateUSD$1.00EUR€0.85GBP£0.73JPY¥110.50CAD$1.25AUD$1.35CHF₣0.92CNY¥6.45Mathematical Formula: ROI = (Gain - Cost) / Cost × 100%Compound Interest: A = P(1 + r/n)^(nt)Where: A = Final Amount, P = Principal, r = Rate, n = Compounding Frequency, t = Time"
+        },
+        {
+          "domain": "legal",
+          "page_text": "Legal Precedent AlgorithmCase CitationPrecedent WeightBinding AuthoritySmith v. Jones (2023)HighSupreme CourtBrown v. White (2022)MediumDistrict CourtDavis v. Miller (2021)LowAppeals CourtLegal Formula: Precedent Strength = (Court Level × Recency × Relevance) / 100Statute Reference: 15 U.S.C. § 1125(a) - Trademark InfringementElements: 1) Valid Mark 2) Use in Commerce 3) Likelihood of Confusion"
+        },
+        {
+          "domain": "scientific",
+          "page_text": "Chemical Reaction DataReactantProductYield RateTemperatureH2 + O2H2O95.2%298KCH4 + 2O2CO2 + 2H2O87.8%573KMathematical Equations:ΔG = ΔH - TΔS (Gibbs Free Energy)E = mc² (Mass-Energy Equivalence)F = ma (Newton's Second Law)Statistical Analysis: μ = Σx/n, σ = √(Σ(x-μ)²/n)Algorithm: if p-value < 0.05 then reject null hypothesis"
+        },
+        {
+          "domain": "general",
+          "page_text": "Technical SpecificationsComponentSpecificationValueUnitProcessorSpeed3.2GHzMemoryCapacity16GBStorageSize1TBSSDAlgorithm Complexity: O(n log n) for sortingCode Snippet: for (int i = 0; i < n; i++) { result += array[i]; }Mathematical Operators: +, -, ×, ÷, √, ∑, ∫, ±, ≤, ≥, ≠, ∞Performance Metrics: Throughput = Operations/Second, Latency = Response Time"
+        },
+        {
+          "domain": "financial",
+          "page_text": "Portfolio AnalysisAssetAllocationReturnRiskStocks60%12.5%HighBonds30%4.2%LowCash10%2.1%MinimalMathematical Models: Sharpe Ratio = (Rp - Rf) / σpBlack-Scholes: C = S₀N(d₁) - Ke^(-rT)N(d₂)Where: d₁ = [ln(S₀/K) + (r + σ²/2)T] / σ√TAlgorithm: if volatility > threshold then reduce position size"
+        },
+        {
+          "domain": "legal",
+          "page_text": "Compliance MatrixRegulationRequirementDeadlinePenaltyGDPRData ProtectionMay 2018€20M or 4% RevenueSOXFinancial ReportingQuarterly$5M + PrisonHIPAAHealth PrivacyOngoing$1.5M per ViolationLegal Algorithm: if breach_detected then notify_authorities within 72_hoursStatute References: 15 U.S.C. § 78m, 29 C.F.R. § 1630.2(g), 45 C.F.R. § 164.502"
+        },
+        {
+          "domain": "scientific",
+          "page_text": "Research MethodologyStepProcessDurationSuccess RateData Collection6 months85%Statistical Analysis3 months92%Peer Review2 months78%Publication1 month95%Mathematical Formulas: t-test = (x̄₁ - x̄₂) / √(s₁²/n₁ + s₂²/n₂)Chi-square = Σ(O - E)²/EAlgorithm Pseudocode: BEGIN → Collect Data → Analyze → Validate → Publish → ENDChemical Notation: H₂SO₄ + 2NaOH → Na₂SO₄ + 2H₂O"
+        },
+        {
+          "domain": "general",
+          "page_text": "System ArchitectureComponentInterfaceProtocolBandwidthDatabaseMySQLTCP/IP1GbpsAPIRESTHTTP/HTTPS100MbpsCacheRedisTCP/IP500MbpsAlgorithm Flow: Input → Validate → Process → Cache → Output → LogMathematical Operations: CPU Utilization = (Active Time / Total Time) × 100%Memory Usage = (Used Memory / Total Memory) × 100%Code Metrics: Lines of Code = Σ(function_length), Complexity = O(n²)"
+        },
+        {
+          "domain": "financial",
+          "page_text": "Risk Assessment MatrixRisk LevelProbabilityImpactMitigationHigh0.8SevereInsuranceMedium0.5ModerateMonitoringLow0.2MinorAcceptanceFinancial Formulas: VaR = μ - σ × Z₀.₀₅ (Value at Risk)CAPM: E(R) = Rf + β × (Rm - Rf)Algorithm: if risk_score > threshold then trigger_alertCurrency Symbols: $, €, £, ¥, ₣, ₹, ₽, ₩Mathematical Operators: +, -, ×, ÷, %, √, ∑, ∫"
+        },
+        {
+          "domain": "legal",
+          "page_text": "Case Law HierarchyCourt LevelBinding AuthorityCitation FormatSupreme CourtMandatorySmith v. Jones, 123 U.S. 456 (2023)Circuit CourtPersuasiveBrown v. White, 456 F.3d 789 (2022)District CourtNon-bindingDavis v. Miller, 789 F.Supp.2d 123 (2021)Legal Algorithm: if court_level = supreme then precedent_binding = trueLegal Citations: 15 U.S.C. § 1125(a), 29 C.F.R. § 1630.2(g), Fed. R. Civ. P. 12(b)(6)Mathematical Formula: Precedent Weight = (Court Authority × Recency × Relevance) / 100"
+        }
+      ]
+    }

@@ -1,7 +1,7 @@
 name: "gibberish_scenario"
 description: "Generate total gibberish due to non-ASCII characters, binary images"
-model: "gemini-2.5-flash"
-temperature: 1.0
+model: "gemini-2.5-flash-lite"
+temperature: 2.0
 max_tokens: 8000
 
 prompt: |
@@ -31,22 +31,58 @@ prompt: |
   
   Make it realistic - simulate what happens when PDF contains non-text elements or corrupted encoding, with domain-appropriate terms appearing among the gibberish. The output should represent approximately one page worth of corrupted text content.
 
-  IMPORTANT: You must respond with valid JSON only. Return exactly 10 examples in the following format:
+  CRITICAL REQUIREMENTS:
+  1. You MUST return exactly 10 examples - no more, no less
+  2. Each example must have ONLY two fields: "domain" and "page_text"
+  3. Domain must be one of: "financial", "legal", "scientific", or "general"
+  4. Page_text must contain the corrupted/gibberish content
+  5. Return ONLY valid JSON with no additional text or fields
+  
+  Required JSON format (exactly this structure):
   {
     "examples": [
       {
-        "domain": "financial|legal|scientific|general",
+        "domain": "financial",
         "page_text": "The corrupted text content here..."
       },
       {
-        "domain": "financial|legal|scientific|general", 
+        "domain": "legal", 
+        "page_text": "The corrupted text content here..."
+      },
+      {
+        "domain": "scientific",
+        "page_text": "The corrupted text content here..."
+      },
+      {
+        "domain": "general",
+        "page_text": "The corrupted text content here..."
+      },
+      {
+        "domain": "financial",
+        "page_text": "The corrupted text content here..."
+      },
+      {
+        "domain": "legal",
+        "page_text": "The corrupted text content here..."
+      },
+      {
+        "domain": "scientific",
+        "page_text": "The corrupted text content here..."
+      },
+      {
+        "domain": "general",
+        "page_text": "The corrupted text content here..."
+      },
+      {
+        "domain": "financial",
+        "page_text": "The corrupted text content here..."
+      },
+      {
+        "domain": "legal",
         "page_text": "The corrupted text content here..."
       }
-      // ... 8 more examples
     ]
   }
-  
-  Do not include any text before or after the JSON. Return only the JSON object.
 
 output_format: "json"
 json_schema:

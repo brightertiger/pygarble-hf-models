@@ -225,7 +225,7 @@ def main(prompt_file: str, num_batches: int, summary: bool = True):
     return None
 
 if __name__ == '__main__':
-    prompt_file = 'src/generator/prompt_normal_parsing.yaml'
-    num_batches = 2000
+    prompt_file = 'src/generator/prompt_domain_specific.yaml'
+    num_batches = 500
     summary = True
     main(prompt_file, num_batches, summary)

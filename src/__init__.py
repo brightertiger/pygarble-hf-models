@@ -8,11 +8,11 @@ __version__ = "1.0.0"
 __author__ = "Your Name"
 __email__ = "your.email@example.com"
 
-from .training.classifier import SentenceTransformerClassifier
+from .training.classifier import BERTBinaryClassifier
 from .training.dataset import TextClassificationDataset, load_data_from_csv
 
 __all__ = [
-    "SentenceTransformerClassifier",
+    "BERTBinaryClassifier",
     "TextClassificationDataset", 
     "load_data_from_csv"
 ]

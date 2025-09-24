@@ -1,0 +1,45 @@
+huggingface:
+  repo_name: "brightertiger/garbled-text-detector"  # Change this to your HF username
+  organization: null  # Set to your org name if publishing under an organization
+  private: false
+  commit_message: "Upload garbled text detection model"
+  
+# Authentication: Run 'huggingface-cli login' before deployment
+# Get your API token from: https://huggingface.co/settings/tokens
+  
+deployment:
+  output_dir: "hf_model"
+  save_only: false  # Set to true to only save locally, false to upload to HF
+  
+model:
+  description: "Binary text classifier for detecting garbled/corrupted text"
+  task: "binary-classification"
+  tags:
+    - "text-classification"
+    - "binary-classification"
+    - "garbled-text-detection"
+    - "bert"
+    - "pytorch"
+  
+license:
+  type: "apache-2.0"
+  
+performance:
+  accuracy: 0.9613  # 96.1% accuracy on validation set
+  precision: 0.9202  # 92.0% precision for garbled text detection
+  recall: 0.9582  # 95.8% recall for garbled text detection
+  f1_score: 0.9388  # 93.9% F1-score
+  roc_auc: 0.9924  # 99.2% ROC-AUC
+  
+  # Inference Performance
+  throughput: 50.3  # samples/second
+  avg_inference_time: 19.60  # milliseconds per sample
+  total_parameters: 14350874  # 14.4M parameters
+  model_size_mb: 54.7  # MB
+  
+  # Dataset Information
+  validation_samples: 6646  # Total validation samples
+  true_negatives: 4417  # Normal correctly classified
+  false_positives: 171  # Normal misclassified as Garbled
+  false_negatives: 86  # Garbled misclassified as Normal
+  true_positives: 1972  # Garbled correctly classified

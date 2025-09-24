@@ -8,7 +8,7 @@ import torch.nn.functional as F
 import torch.quantization as quantization
 
 
-class SentenceTransformerClassifier(pl.LightningModule):
+class BERTBinaryClassifier(pl.LightningModule):
     def __init__(
         self,
         model_name: str = "distilbert-base-uncased",

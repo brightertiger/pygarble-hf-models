@@ -18,7 +18,18 @@ class TextClassificationDataset(Dataset):
     
     def __getitem__(self, idx):
         text = str(self.texts[idx])
-        label = int(self.labels[idx])
+        
+        # Handle NaN or invalid labels
+        label_val = self.labels[idx]
+        if pd.isna(label_val) or label_val is None:
+            print(f"Warning: Invalid label at index {idx}: {label_val}")
+            label = 0  # Default to class 0
+        else:
+            try:
+                label = int(float(label_val))
+            except (ValueError, TypeError):
+                print(f"Warning: Cannot convert label at index {idx}: {label_val}")
+                label = 0  # Default to class 0
         
         encoding = self.tokenizer(
             text,
@@ -37,8 +48,57 @@ class TextClassificationDataset(Dataset):
 
 def load_data_from_csv(file_path: str, text_column: str, label_column: str) -> Tuple[List[str], List[int]]:
     df = pd.read_csv(file_path)
+    original_length = len(df)
+    
+    # Check for missing values
+    if df[text_column].isna().any():
+        print(f"Warning: Found {df[text_column].isna().sum()} missing text values in {file_path}")
+        df = df.dropna(subset=[text_column])
+    
+    if df[label_column].isna().any():
+        print(f"Warning: Found {df[label_column].isna().sum()} missing label values in {file_path}")
+        df = df.dropna(subset=[label_column])
+    
+    # Check for empty/blank text values
+    blank_text_mask = df[text_column].astype(str).str.strip() == ''
+    blank_count = blank_text_mask.sum()
+    if blank_count > 0:
+        print(f"Warning: Found {blank_count} blank text values in {file_path}")
+        df = df[~blank_text_mask]
+    
+    # Check for very short text (less than 10 characters)
+    short_text_mask = df[text_column].astype(str).str.len() < 10
+    short_count = short_text_mask.sum()
+    if short_count > 0:
+        print(f"Warning: Found {short_count} very short text values (<10 chars) in {file_path}")
+        df = df[~short_text_mask]
+    
+    print(f"Data cleaning: {original_length} -> {len(df)} rows ({original_length - len(df)} removed)")
+    
+    # Convert labels to int, handling any remaining issues
+    try:
+        labels = df[label_column].astype(int).tolist()
+    except ValueError as e:
+        print(f"Error converting labels to int in {file_path}: {e}")
+        print(f"Label column unique values: {df[label_column].unique()}")
+        print(f"Label column dtypes: {df[label_column].dtype}")
+        # Try to convert non-numeric labels
+        labels = []
+        for label in df[label_column]:
+            try:
+                labels.append(int(float(label)))
+            except (ValueError, TypeError):
+                print(f"Skipping invalid label: {label}")
+                continue
+        print(f"Successfully converted {len(labels)} labels out of {len(df)} rows")
+    
     texts = df[text_column].tolist()
-    labels = df[label_column].tolist()
+    
+    # Ensure we have the same number of texts and labels
+    min_length = min(len(texts), len(labels))
+    texts = texts[:min_length]
+    labels = labels[:min_length]
+    
     return texts, labels
 
 

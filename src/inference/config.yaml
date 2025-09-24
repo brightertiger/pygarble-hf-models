@@ -1,0 +1,36 @@
+inference:
+  model_path: "data/model/best-model-epoch=00-val_loss=0.25.ckpt"
+  model_name: "huawei-noah/TinyBERT_General_4L_312D"
+  max_length: 512
+  
+  device: "auto"  # auto, cpu, cuda, mps
+  
+data:
+  validation_csv: "data/validation.csv"
+  text_column: "text"
+  label_column: "label"
+
+evaluation:
+  output_dir: "data/evaluation"
+  
+  metrics:
+    calculate_threshold_analysis: true
+    threshold_range: [0.1, 0.9]
+    threshold_steps: 17
+    
+  visualizations:
+    plot_confusion_matrix: true
+    plot_roc_curve: true
+    plot_precision_recall: true
+    plot_probability_distribution: true
+    plot_threshold_analysis: true
+    plot_performance_analysis: true
+    
+  reports:
+    generate_markdown: true
+    generate_json: true
+    generate_csv: true
+    
+  performance:
+    log_progress_interval: 1000
+    save_individual_predictions: true

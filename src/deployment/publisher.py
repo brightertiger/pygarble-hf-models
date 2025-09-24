@@ -9,7 +9,7 @@ import sys
 import torch
 from transformers import AutoTokenizer
 
-from src.core.classifier import SentenceTransformerClassifier
+from src.training.classifier import BERTBinaryClassifier
 from src.deployment.hub_client import save_model_for_huggingface, upload_to_huggingface
 
 
@@ -34,7 +34,7 @@ def main():
         return
     
     # Get config file from args or use default
-    config_file = 'src/configs/default.yaml'
+    config_file = 'src/training/config.yaml'
     for i, arg in enumerate(sys.argv):
         if arg == '--config' and i + 1 < len(sys.argv):
             config_file = sys.argv[i + 1]
@@ -79,7 +79,7 @@ def main():
     print(f"Loading model from checkpoint: {checkpoint}")
     
     # Load model
-    model = SentenceTransformerClassifier.load_from_checkpoint(checkpoint)
+    model = BERTBinaryClassifier.load_from_checkpoint(checkpoint)
     
     # Load tokenizer
     tokenizer = AutoTokenizer.from_pretrained(config['model']['name'])

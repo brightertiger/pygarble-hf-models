@@ -61,7 +61,9 @@ wandb/
 
 # Model checkpoints
 checkpoints/
+data/model/
 lightning_logs/
+hf_model
 
 # Hugging Face cache
 .cache/

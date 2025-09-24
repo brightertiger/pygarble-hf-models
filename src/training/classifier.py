@@ -1,31 +1,25 @@
-"""
-PyTorch Lightning model for sentence transformer fine-tuning.
-"""
-
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import pytorch_lightning as pl
-from transformers import AutoModel, AutoTokenizer
+from transformers import AutoModel, AutoTokenizer, BitsAndBytesConfig
+from torch.optim import AdamW
 from torchmetrics import Accuracy, Precision, Recall, F1Score
-from typing import Dict, Any, Optional
-import numpy as np
+import torch.nn.functional as F
+import torch.quantization as quantization
 
 
 class SentenceTransformerClassifier(pl.LightningModule):
-    """
-    PyTorch Lightning module for fine-tuning sentence transformers for binary classification.
-    """
-    
     def __init__(
         self,
-        model_name: str = "sentence-transformers/all-MiniLM-L6-v2",
+        model_name: str = "distilbert-base-uncased",
         num_classes: int = 2,
         learning_rate: float = 2e-5,
         weight_decay: float = 0.01,
         warmup_steps: int = 100,
         dropout: float = 0.1,
-        max_length: int = 512
+        max_length: int = 512,
+        quantization: bool = False,
+        quantized_inference: bool = False
     ):
         super().__init__()
         self.save_hyperparameters()
@@ -35,22 +29,30 @@ class SentenceTransformerClassifier(pl.LightningModule):
         self.learning_rate = learning_rate
         self.weight_decay = weight_decay
         self.warmup_steps = warmup_steps
+        self.dropout = dropout
         self.max_length = max_length
+        self.quantization = quantization
+        self.quantized_inference = quantized_inference
         
-        # Load the pre-trained transformer model
-        self.transformer = AutoModel.from_pretrained(model_name)
+        # Load model with quantization if specified
+        if quantization and not quantized_inference:
+            # For training, use dynamic quantization
+            self.bert = AutoModel.from_pretrained(model_name)
+            self.bert = torch.quantization.quantize_dynamic(
+                self.bert, {nn.Linear}, dtype=torch.qint8
+            )
+        else:
+            self.bert = AutoModel.from_pretrained(model_name)
         
-        # Classification head
-        hidden_size = self.transformer.config.hidden_size
-        self.classifier = nn.Sequential(
-            nn.Dropout(dropout),
-            nn.Linear(hidden_size, hidden_size // 2),
-            nn.ReLU(),
-            nn.Dropout(dropout),
-            nn.Linear(hidden_size // 2, num_classes)
-        )
+        self.dropout_layer = nn.Dropout(dropout)
+        self.classifier = nn.Linear(self.bert.config.hidden_size, num_classes)
         
-        # Initialize metrics
+        # Quantize classifier if needed
+        if quantization:
+            self.classifier = torch.quantization.quantize_dynamic(
+                self.classifier, {nn.Linear}, dtype=torch.qint8
+            )
+        
         self.train_accuracy = Accuracy(task="binary")
         self.val_accuracy = Accuracy(task="binary")
         self.test_accuracy = Accuracy(task="binary")
@@ -66,25 +68,33 @@ class SentenceTransformerClassifier(pl.LightningModule):
         self.train_f1 = F1Score(task="binary")
         self.val_f1 = F1Score(task="binary")
         self.test_f1 = F1Score(task="binary")
+    
+    def prepare_for_inference(self):
+        """Prepare model for CPU inference with quantization."""
+        self.eval()
         
+        if self.quantized_inference:
+            # Apply dynamic quantization for inference
+            self.bert = torch.quantization.quantize_dynamic(
+                self.bert, {nn.Linear}, dtype=torch.qint8
+            )
+            self.classifier = torch.quantization.quantize_dynamic(
+                self.classifier, {nn.Linear}, dtype=torch.qint8
+            )
+        
+        # Move to CPU for inference
+        self.cpu()
+        
+        return self
+    
     def forward(self, input_ids, attention_mask):
-        """Forward pass through the model."""
-        # Get transformer outputs
-        outputs = self.transformer(
-            input_ids=input_ids,
-            attention_mask=attention_mask
-        )
-        
-        # Use [CLS] token representation for classification
+        outputs = self.bert(input_ids=input_ids, attention_mask=attention_mask)
         pooled_output = outputs.pooler_output
-        
-        # Pass through classification head
-        logits = self.classifier(pooled_output)
-        
+        output = self.dropout_layer(pooled_output)
+        logits = self.classifier(output)
         return logits
     
     def training_step(self, batch, batch_idx):
-        """Training step."""
         input_ids = batch['input_ids']
         attention_mask = batch['attention_mask']
         labels = batch['labels']
@@ -92,14 +102,13 @@ class SentenceTransformerClassifier(pl.LightningModule):
         logits = self(input_ids, attention_mask)
         loss = F.cross_entropy(logits, labels)
         
-        # Calculate metrics
         preds = torch.argmax(logits, dim=1)
+        
         self.train_accuracy(preds, labels)
         self.train_precision(preds, labels)
         self.train_recall(preds, labels)
         self.train_f1(preds, labels)
         
-        # Log metrics
         self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True)
         self.log('train_acc', self.train_accuracy, on_step=True, on_epoch=True, prog_bar=True)
         self.log('train_precision', self.train_precision, on_step=True, on_epoch=True)
@@ -109,7 +118,6 @@ class SentenceTransformerClassifier(pl.LightningModule):
         return loss
     
     def validation_step(self, batch, batch_idx):
-        """Validation step."""
         input_ids = batch['input_ids']
         attention_mask = batch['attention_mask']
         labels = batch['labels']
@@ -117,14 +125,13 @@ class SentenceTransformerClassifier(pl.LightningModule):
         logits = self(input_ids, attention_mask)
         loss = F.cross_entropy(logits, labels)
         
-        # Calculate metrics
         preds = torch.argmax(logits, dim=1)
+        
         self.val_accuracy(preds, labels)
         self.val_precision(preds, labels)
         self.val_recall(preds, labels)
         self.val_f1(preds, labels)
         
-        # Log metrics
         self.log('val_loss', loss, on_step=False, on_epoch=True, prog_bar=True)
         self.log('val_acc', self.val_accuracy, on_step=False, on_epoch=True, prog_bar=True)
         self.log('val_precision', self.val_precision, on_step=False, on_epoch=True)
@@ -134,7 +141,6 @@ class SentenceTransformerClassifier(pl.LightningModule):
         return loss
     
     def test_step(self, batch, batch_idx):
-        """Test step."""
         input_ids = batch['input_ids']
         attention_mask = batch['attention_mask']
         labels = batch['labels']
@@ -142,14 +148,13 @@ class SentenceTransformerClassifier(pl.LightningModule):
         logits = self(input_ids, attention_mask)
         loss = F.cross_entropy(logits, labels)
         
-        # Calculate metrics
         preds = torch.argmax(logits, dim=1)
+        
         self.test_accuracy(preds, labels)
         self.test_precision(preds, labels)
         self.test_recall(preds, labels)
         self.test_f1(preds, labels)
         
-        # Log metrics
         self.log('test_loss', loss, on_step=False, on_epoch=True, prog_bar=True)
         self.log('test_acc', self.test_accuracy, on_step=False, on_epoch=True, prog_bar=True)
         self.log('test_precision', self.test_precision, on_step=False, on_epoch=True)
@@ -159,72 +164,38 @@ class SentenceTransformerClassifier(pl.LightningModule):
         return loss
     
     def configure_optimizers(self):
-        """Configure optimizer and scheduler."""
-        optimizer = torch.optim.AdamW(
+        optimizer = AdamW(
             self.parameters(),
             lr=self.learning_rate,
             weight_decay=self.weight_decay
         )
         
-        # Linear warmup scheduler
-        def lr_lambda(step):
-            if step < self.warmup_steps:
-                return step / self.warmup_steps
-            return 1.0
-        
-        scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda)
+        scheduler = torch.optim.lr_scheduler.LinearLR(
+            optimizer,
+            start_factor=1.0,
+            end_factor=0.0,
+            total_iters=self.warmup_steps
+        )
         
         return {
             'optimizer': optimizer,
             'lr_scheduler': {
                 'scheduler': scheduler,
-                'interval': 'step',
-                'frequency': 1
+                'interval': 'step'
             }
         }
     
-    def predict(self, texts: list, tokenizer, device: str = 'cpu') -> list:
-        """
-        Make predictions on a list of texts.
-        
-        Args:
-            texts: List of input texts
-            tokenizer: Tokenizer instance
-            device: Device to run inference on
-        
-        Returns:
-            List of predicted probabilities and labels
-        """
-        self.eval()
-        self.to(device)
-        
-        predictions = []
+    def predict_step(self, batch, batch_idx):
+        input_ids = batch['input_ids']
+        attention_mask = batch['attention_mask']
         
         with torch.no_grad():
-            for text in texts:
-                # Tokenize
-                encoding = tokenizer(
-                    text,
-                    truncation=True,
-                    padding='max_length',
-                    max_length=self.max_length,
-                    return_tensors='pt'
-                )
-                
-                input_ids = encoding['input_ids'].to(device)
-                attention_mask = encoding['attention_mask'].to(device)
-                
-                # Forward pass
-                logits = self(input_ids, attention_mask)
-                probs = F.softmax(logits, dim=1)
-                pred_label = torch.argmax(probs, dim=1).item()
-                pred_prob = probs[0][pred_label].item()
-                
-                predictions.append({
-                    'text': text,
-                    'predicted_label': pred_label,
-                    'confidence': pred_prob,
-                    'probabilities': probs[0].cpu().numpy().tolist()
-                })
+            logits = self(input_ids, attention_mask)
+            probs = F.softmax(logits, dim=1)
+            preds = torch.argmax(logits, dim=1)
         
-        return predictions
+        return {
+            'predictions': preds,
+            'probabilities': probs,
+            'logits': logits
+        }

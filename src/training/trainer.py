@@ -12,8 +12,8 @@ from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping, Learning
 from pytorch_lightning.loggers import WandbLogger
 from transformers import AutoTokenizer
 
-from src.core.classifier import SentenceTransformerClassifier
-from src.core.dataset import (
+from src.training.classifier import SentenceTransformerClassifier
+from src.training.dataset import (
     load_data_from_csv, 
     create_data_loaders, 
     split_data, 
@@ -44,22 +44,26 @@ def setup_callbacks(config: dict):
     """Setup training callbacks."""
     callbacks = []
     
+    callback_config = config.get('callbacks', {})
+    
     # Model checkpoint callback
+    checkpoint_config = callback_config.get('model_checkpoint', {})
     checkpoint_callback = ModelCheckpoint(
         dirpath='checkpoints',
         filename='best-model-{epoch:02d}-{val_loss:.2f}',
-        monitor='val_loss',
-        mode='min',
-        save_top_k=1,
-        save_last=True
+        monitor=checkpoint_config.get('monitor', 'val_loss'),
+        mode=checkpoint_config.get('mode', 'min'),
+        save_top_k=checkpoint_config.get('save_top_k', 1),
+        save_last=checkpoint_config.get('save_last', True)
     )
     callbacks.append(checkpoint_callback)
     
     # Early stopping callback
+    early_stop_config = callback_config.get('early_stopping', {})
     early_stop_callback = EarlyStopping(
-        monitor='val_loss',
-        patience=3,
-        mode='min',
+        monitor=early_stop_config.get('monitor', 'val_loss'),
+        patience=early_stop_config.get('patience', 3),
+        mode=early_stop_config.get('mode', 'min'),
         verbose=True
     )
     callbacks.append(early_stop_callback)
@@ -77,7 +81,7 @@ def main():
     test_only = '--test-only' in sys.argv
     
     # Get config file from args or use default
-    config_file = 'src/configs/default.yaml'
+    config_file = 'src/training/config.yaml'
     for i, arg in enumerate(sys.argv):
         if arg == '--config' and i + 1 < len(sys.argv):
             config_file = sys.argv[i + 1]
@@ -165,7 +169,9 @@ def main():
         weight_decay=config['training']['weight_decay'],
         warmup_steps=config['training']['warmup_steps'],
         dropout=config['model']['dropout'],
-        max_length=config['model']['max_length']
+        max_length=config['model']['max_length'],
+        quantization=config['model'].get('quantization', False),
+        quantized_inference=config['model'].get('quantized_inference', False)
     )
     
     if test_only:

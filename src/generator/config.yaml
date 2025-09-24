@@ -1,0 +1,36 @@
+generation:
+  scenarios:
+    - name: "normal"
+      prompt_file: "prompt_normal_parsing.yaml"
+      description: "Normal text parsing scenarios"
+    - name: "gibberish" 
+      prompt_file: "prompt_gibberish.yaml"
+      description: "Garbled/corrupted text scenarios"
+    - name: "domain"
+      prompt_file: "prompt_domain_specific.yaml"
+      description: "Domain-specific content scenarios"
+  
+  default_samples: 1000
+  output_dir: "data/data"
+  
+  api:
+    provider: "google"
+    model: "gemini-pro"
+    max_retries: 3
+    timeout: 60
+
+data_processing:
+  train_split: 0.8
+  val_split: 0.2
+  min_text_length: 50
+  max_text_length: 2000
+  
+  labels:
+    normal: 0
+    garbled: 1
+
+output:
+  csv_dir: "data"
+  train_file: "train.csv"
+  val_file: "validation.csv"
+  checkpoint_dir: "data/data"

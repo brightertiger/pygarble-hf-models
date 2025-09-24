@@ -54,9 +54,7 @@ ehthumbs.db
 Thumbs.db
 
 # Data
-data/
 *.csv
-*.json
 *.jsonl
 
 # Logs

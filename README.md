@@ -350,7 +350,7 @@ Apache 2.0
 ```bibtex
 @misc{garbled_text_detector_2025,
   title={Garbled Text Detector: BERT-based Binary Classifier for Text Quality Assessment},
-  author={BrighterTiger},
+  author={Ujjwal Singh Rao},
   year={2025},
   publisher={Hugging Face},
   url={https://huggingface.co/brightertiger/garbled-text-detector}
@@ -375,7 +375,6 @@ Apache 2.0
 For questions, bug reports, or feature requests:
 - 🐛 Open an issue on [GitHub](https://github.com/yourusername/pygarble-hf-models/issues)
 - 💬 Discuss on the [Hugging Face Community](https://huggingface.co/brightertiger/garbled-text-detector/discussions)
-- 📧 Contact: [your-email@example.com]
 
 ## Contributing
 

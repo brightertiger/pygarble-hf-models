@@ -6,7 +6,7 @@ Handles model loading and single/batch predictions.
 
 import torch
 import torch.nn.functional as F
-from transformers import AutoTokenizer, AutoModel
+from transformers import AutoTokenizer
 from typing import List, Tuple, Dict, Any
 import logging
 
@@ -28,31 +28,15 @@ class ModelInference:
         # Load tokenizer
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         
-        # Load model checkpoint
-        self.logger.info(f"Loading model from {checkpoint_path}")
-        checkpoint = torch.load(checkpoint_path, map_location=self.device)
-        
-        # Extract model state dict and hyperparameters
-        if 'state_dict' in checkpoint:
-            state_dict = checkpoint['state_dict']
-            # Remove 'model.' prefix from keys if present
-            state_dict = {k.replace('model.', ''): v for k, v in state_dict.items()}
-        else:
-            state_dict = checkpoint
-            
-        # Load the complete model architecture from the checkpoint
-        # The checkpoint contains the full BERTBinaryClassifier model
         from src.training.classifier import BERTBinaryClassifier
         
-        # Create the model with the same architecture as training
-        self.model = BERTBinaryClassifier(
-            model_name=model_name,
-            num_classes=2,
-            max_length=self.max_length
+        self.logger.info(f"Loading model from {checkpoint_path}")
+        
+        self.model = BERTBinaryClassifier.load_from_checkpoint(
+            checkpoint_path,
+            map_location=self.device
         )
         
-        # Load the trained weights
-        self.model.load_state_dict(state_dict, strict=False)
         self.model.to(self.device)
         self.model.eval()
         self.logger.info("Model loaded successfully")

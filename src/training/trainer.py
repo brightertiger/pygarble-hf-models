@@ -50,11 +50,12 @@ def setup_callbacks(config: dict):
     checkpoint_config = callback_config.get('model_checkpoint', {})
     checkpoint_callback = ModelCheckpoint(
         dirpath=checkpoint_config.get('dirpath', 'checkpoints'),
-        filename=checkpoint_config.get('filename', 'best-model-{epoch:02d}-{val_loss:.2f}'),
+        filename=checkpoint_config.get('filename', 'garbled-text-detector-best'),
         monitor=checkpoint_config.get('monitor', 'val_loss'),
         mode=checkpoint_config.get('mode', 'min'),
         save_top_k=checkpoint_config.get('save_top_k', 1),
-        save_last=checkpoint_config.get('save_last', True)
+        save_last=checkpoint_config.get('save_last', False),
+        enable_version_counter=False
     )
     callbacks.append(checkpoint_callback)
     
@@ -180,7 +181,7 @@ def main():
             raise ValueError("Checkpoint path required for testing")
         
         print(f"Loading model from checkpoint: {checkpoint}")
-        model = SentenceTransformerClassifier.load_from_checkpoint(checkpoint)
+        model = BERTBinaryClassifier.load_from_checkpoint(checkpoint)
         
         # Load test data
         test_file = os.path.join(data_dir, config['data']['test_file'].split('/')[-1])

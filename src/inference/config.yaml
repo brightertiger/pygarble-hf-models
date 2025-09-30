@@ -1,5 +1,5 @@
 inference:
-  model_path: "data/model/best-model-epoch=00-val_loss=0.25.ckpt"
+  model_path: "data/model/garbled-text-detector-best.ckpt"
   model_name: "huawei-noah/TinyBERT_General_4L_312D"
   max_length: 512
   

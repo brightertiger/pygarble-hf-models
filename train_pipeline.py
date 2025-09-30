@@ -11,7 +11,7 @@ from transformers import AutoTokenizer
 
 from src.training.utils import load_config, get_device
 from src.training.dataset import create_sample_data, load_data_from_csv, create_data_loaders
-from src.training.classifier import SentenceTransformerClassifier
+from src.training.classifier import BERTBinaryClassifier
 from src.training.trainer import setup_callbacks, setup_logger
 
 def setup_logging():
@@ -70,9 +70,29 @@ def auto_detect_hardware(config):
     
     return config
 
+def clean_model_directory(model_dir):
+    """Clean model directory before training."""
+    logger = logging.getLogger(__name__)
+    
+    if os.path.exists(model_dir):
+        checkpoint_files = [f for f in os.listdir(model_dir) if f.endswith('.ckpt')]
+        if checkpoint_files:
+            logger.info(f"Cleaning {len(checkpoint_files)} old checkpoint(s) from {model_dir}")
+            for ckpt_file in checkpoint_files:
+                ckpt_path = os.path.join(model_dir, ckpt_file)
+                os.remove(ckpt_path)
+                logger.info(f"  Removed: {ckpt_file}")
+            logger.info("Model directory cleaned successfully")
+    else:
+        os.makedirs(model_dir, exist_ok=True)
+        logger.info(f"Created model directory: {model_dir}")
+
 def train_model(config):
     """Train the model with given configuration."""
     logger = logging.getLogger(__name__)
+    
+    model_dir = config['callbacks']['model_checkpoint']['dirpath']
+    clean_model_directory(model_dir)
     
     # Setup tokenizer
     tokenizer = AutoTokenizer.from_pretrained(config['model']['name'])
@@ -110,7 +130,7 @@ def train_model(config):
     )
     
     # Initialize model
-    model = SentenceTransformerClassifier(
+    model = BERTBinaryClassifier(
         model_name=config['model']['name'],
         num_classes=2,
         learning_rate=config['training']['learning_rate'],
@@ -151,7 +171,7 @@ def evaluate_model(config, checkpoint_path):
     
     # Load model from checkpoint
     logger.info(f"Loading model from checkpoint: {checkpoint_path}")
-    model = SentenceTransformerClassifier.load_from_checkpoint(checkpoint_path)
+    model = BERTBinaryClassifier.load_from_checkpoint(checkpoint_path)
     
     # Setup tokenizer
     tokenizer = AutoTokenizer.from_pretrained(config['model']['name'])

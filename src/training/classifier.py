@@ -1,17 +1,16 @@
 import torch
 import torch.nn as nn
 import pytorch_lightning as pl
-from transformers import AutoModel, AutoTokenizer, BitsAndBytesConfig
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
 from torch.optim import AdamW
 from torchmetrics import Accuracy, Precision, Recall, F1Score
 import torch.nn.functional as F
-import torch.quantization as quantization
 
 
 class BERTBinaryClassifier(pl.LightningModule):
     def __init__(
         self,
-        model_name: str = "distilbert-base-uncased",
+        model_name: str = "huawei-noah/TinyBERT_General_4L_312D",
         num_classes: int = 2,
         learning_rate: float = 2e-5,
         weight_decay: float = 0.01,
@@ -34,23 +33,22 @@ class BERTBinaryClassifier(pl.LightningModule):
         self.quantization = quantization
         self.quantized_inference = quantized_inference
         
-        # Load model with quantization if specified
         if quantization and not quantized_inference:
-            # For training, use dynamic quantization
-            self.bert = AutoModel.from_pretrained(model_name)
-            self.bert = torch.quantization.quantize_dynamic(
-                self.bert, {nn.Linear}, dtype=torch.qint8
+            self.model = AutoModelForSequenceClassification.from_pretrained(
+                model_name,
+                num_labels=num_classes,
+                hidden_dropout_prob=dropout,
+                attention_probs_dropout_prob=dropout
+            )
+            self.model = torch.quantization.quantize_dynamic(
+                self.model, {nn.Linear}, dtype=torch.qint8
             )
         else:
-            self.bert = AutoModel.from_pretrained(model_name)
-        
-        self.dropout_layer = nn.Dropout(dropout)
-        self.classifier = nn.Linear(self.bert.config.hidden_size, num_classes)
-        
-        # Quantize classifier if needed
-        if quantization:
-            self.classifier = torch.quantization.quantize_dynamic(
-                self.classifier, {nn.Linear}, dtype=torch.qint8
+            self.model = AutoModelForSequenceClassification.from_pretrained(
+                model_name,
+                num_labels=num_classes,
+                hidden_dropout_prob=dropout,
+                attention_probs_dropout_prob=dropout
             )
         
         self.train_accuracy = Accuracy(task="binary")
@@ -70,29 +68,20 @@ class BERTBinaryClassifier(pl.LightningModule):
         self.test_f1 = F1Score(task="binary")
     
     def prepare_for_inference(self):
-        """Prepare model for CPU inference with quantization."""
         self.eval()
         
         if self.quantized_inference:
-            # Apply dynamic quantization for inference
-            self.bert = torch.quantization.quantize_dynamic(
-                self.bert, {nn.Linear}, dtype=torch.qint8
-            )
-            self.classifier = torch.quantization.quantize_dynamic(
-                self.classifier, {nn.Linear}, dtype=torch.qint8
+            self.model = torch.quantization.quantize_dynamic(
+                self.model, {nn.Linear}, dtype=torch.qint8
             )
         
-        # Move to CPU for inference
         self.cpu()
         
         return self
     
     def forward(self, input_ids, attention_mask):
-        outputs = self.bert(input_ids=input_ids, attention_mask=attention_mask)
-        pooled_output = outputs.pooler_output
-        output = self.dropout_layer(pooled_output)
-        logits = self.classifier(output)
-        return logits
+        outputs = self.model(input_ids=input_ids, attention_mask=attention_mask)
+        return outputs.logits
     
     def training_step(self, batch, batch_idx):
         input_ids = batch['input_ids']

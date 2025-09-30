@@ -11,7 +11,7 @@ import pandas as pd
 from transformers import AutoTokenizer
 import pytorch_lightning as pl
 
-from src.training.classifier import SentenceTransformerClassifier
+from src.training.classifier import BERTBinaryClassifier
 from src.training.dataset import load_data_from_csv, create_data_loaders
 from src.training.utils import (
     load_config, get_device, plot_confusion_matrix, 
@@ -35,7 +35,7 @@ def evaluate_model(
     
     # Load model from checkpoint
     print(f"Loading model from checkpoint: {checkpoint_path}")
-    model = SentenceTransformerClassifier.load_from_checkpoint(checkpoint_path)
+    model = BERTBinaryClassifier.load_from_checkpoint(checkpoint_path)
     model.eval()
     
     # Setup tokenizer

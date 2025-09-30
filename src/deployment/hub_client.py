@@ -6,9 +6,65 @@ import os
 import torch
 import json
 from typing import Dict, Any, Optional
+from pathlib import Path
 from huggingface_hub import HfApi, create_repo
-from transformers import AutoTokenizer, AutoModel
+from transformers import AutoTokenizer, AutoConfig
 import shutil
+from sklearn.metrics import confusion_matrix
+import numpy as np
+
+
+def load_evaluation_metrics(eval_dir: str = "data/evaluation") -> Dict[str, Any]:
+    eval_path = Path(eval_dir) / "detailed_results.json"
+    if eval_path.exists():
+        with open(eval_path, 'r') as f:
+            results = json.load(f)
+        
+        metrics = results['metrics']
+        performance = results['performance']
+        
+        y_true = np.array(results['predictions']['y_true'])
+        y_pred = np.array(results['predictions']['y_pred'])
+        cm = confusion_matrix(y_true, y_pred)
+        
+        return {
+            'accuracy': metrics['accuracy'],
+            'precision': metrics['precision'],
+            'recall': metrics['recall'],
+            'f1_score': metrics['f1_score'],
+            'roc_auc': metrics['roc_auc'],
+            'throughput': performance['samples_per_second'],
+            'avg_inference_time': performance['avg_inference_time_ms'],
+            'total_parameters': None,
+            'model_size_mb': None,
+            'validation_samples': performance['total_samples'],
+            'true_negatives': int(cm[0, 0]),
+            'false_positives': int(cm[0, 1]),
+            'false_negatives': int(cm[1, 0]),
+            'true_positives': int(cm[1, 1])
+        }
+    return None
+
+
+def clean_output_directory(output_dir: str):
+    """Clean the output directory before saving new model files."""
+    if os.path.exists(output_dir):
+        print(f"Cleaning existing files in {output_dir}")
+        for item in os.listdir(output_dir):
+            item_path = os.path.join(output_dir, item)
+            try:
+                if os.path.isfile(item_path):
+                    os.remove(item_path)
+                    print(f"  Removed: {item}")
+                elif os.path.isdir(item_path):
+                    shutil.rmtree(item_path)
+                    print(f"  Removed directory: {item}")
+            except Exception as e:
+                print(f"  Warning: Could not remove {item}: {e}")
+        print("Directory cleaned successfully")
+    else:
+        print(f"Creating new directory: {output_dir}")
+        os.makedirs(output_dir, exist_ok=True)
 
 
 def save_model_for_huggingface(
@@ -28,82 +84,86 @@ def save_model_for_huggingface(
         model_name: Name of the model
         config: Configuration dictionary
     """
-    os.makedirs(output_dir, exist_ok=True)
+    clean_output_directory(output_dir)
     
-    # Save tokenizer
+    print("\n📦 Saving model files...")
+    
+    print("  Saving tokenizer...")
     tokenizer.save_pretrained(output_dir)
     
-    # Extract the BERT model and save it
-    bert_model = model.bert
-    bert_model.save_pretrained(output_dir)
+    print("  Saving model with classification head...")
+    hf_model = model.model
+    hf_model.config.id2label = {0: "NORMAL", 1: "GARBLED"}
+    hf_model.config.label2id = {"NORMAL": 0, "GARBLED": 1}
     
-    # Save the classification head separately
-    classifier_state = model.classifier.state_dict()
-    torch.save(classifier_state, os.path.join(output_dir, "classifier_head.pt"))
+    hf_model.save_pretrained(output_dir)
+    print("  ✓ Model saved in HuggingFace format")
     
-    # Save the dropout layer configuration
-    dropout_config = {"dropout_rate": model.dropout_layer.p}
-    with open(os.path.join(output_dir, "dropout_config.json"), "w") as f:
-        json.dump(dropout_config, f)
+    eval_metrics = load_evaluation_metrics()
     
-    # Create model card
-    create_model_card(output_dir, model_name, config)
+    total_params = sum(p.numel() for p in model.parameters())
+    model_size_mb = total_params * 4 / (1024 * 1024)
     
-    # Create config.json with performance metrics
-    model_config = {
-        "model_type": "bert_binary_classifier",
-        "base_model": config['model']['name'],
-        "num_classes": 2,
-        "max_length": config['model']['max_length'],
-        "dropout": config['model']['dropout'],
-        "architecture": "bert + classification_head",
-        "task": "binary_text_classification",
-        "quantization": config['model'].get('quantization', False),
-        "quantized_inference": config['model'].get('quantized_inference', False),
-        "performance": {
-            "accuracy": 0.9613,
-            "precision": 0.9202,
-            "recall": 0.9582,
-            "f1_score": 0.9388,
-            "roc_auc": 0.9924,
-            "throughput": 50.3,
-            "avg_inference_time": 19.60,
-            "total_parameters": 14350874,
-            "model_size_mb": 54.7
+    if eval_metrics:
+        eval_metrics['total_parameters'] = total_params
+        eval_metrics['model_size_mb'] = model_size_mb
+        performance_data = eval_metrics
+        print(f"Loaded evaluation metrics from data/evaluation/detailed_results.json")
+    else:
+        performance_data = {
+            "total_parameters": total_params,
+            "model_size_mb": model_size_mb
         }
+        print("Warning: No evaluation metrics found. Using model stats only.")
+    
+    create_model_card(output_dir, model_name, config, performance_data)
+    
+    metadata_config = {
+        "model_type": "BertForSequenceClassification",
+        "base_model": config['model']['name'],
+        "max_length": config['model']['max_length'],
+        "task": "text-classification",
+        "pipeline_tag": "text-classification",
+        "id2label": {
+            "0": "NORMAL",
+            "1": "GARBLED"
+        },
+        "label2id": {
+            "NORMAL": 0,
+            "GARBLED": 1
+        },
+        "performance": performance_data
     }
     
-    with open(os.path.join(output_dir, "config.json"), "w") as f:
-        json.dump(model_config, f, indent=2)
-
-
-def create_model_card(output_dir: str, model_name: str, config: Dict[str, Any]):
-    """Copy the comprehensive README.md and evaluation visualizations to the model directory."""
-    import shutil
+    print("  Saving metadata...")
+    with open(os.path.join(output_dir, "metadata.json"), "w") as f:
+        json.dump(metadata_config, f, indent=2)
     
-    # Copy the main README.md to the model directory
+    create_inference_script(output_dir, model_name)
+    
+    print("\n✅ Model preparation complete!")
+    print(f"\n📁 Files ready for deployment in '{output_dir}':")
+    for file in sorted(os.listdir(output_dir)):
+        file_path = os.path.join(output_dir, file)
+        if os.path.isfile(file_path):
+            size_mb = os.path.getsize(file_path) / (1024 * 1024)
+            if size_mb > 1:
+                print(f"  ✓ {file} ({size_mb:.1f} MB)")
+            else:
+                size_kb = os.path.getsize(file_path) / 1024
+                print(f"  ✓ {file} ({size_kb:.1f} KB)")
+    print()
+
+
+def create_model_card(output_dir: str, model_name: str, config: Dict[str, Any], performance_data: Dict[str, Any]):
+    """Copy the user-focused README.md to the model directory."""
+    
     main_readme_path = "README.md"
     model_readme_path = os.path.join(output_dir, "README.md")
     
     if os.path.exists(main_readme_path):
         shutil.copy2(main_readme_path, model_readme_path)
-        print(f"Copied comprehensive README.md to model directory")
-        
-        # Copy evaluation visualizations if they exist
-        eval_dir = "data/evaluation"
-        if os.path.exists(eval_dir):
-            eval_files = [
-                "evaluation_plots.png",
-                "threshold_analysis.png", 
-                "performance_analysis.png",
-                "evaluation_report.md"
-            ]
-            for file_name in eval_files:
-                src_path = os.path.join(eval_dir, file_name)
-                dst_path = os.path.join(output_dir, file_name)
-                if os.path.exists(src_path):
-                    shutil.copy2(src_path, dst_path)
-                    print(f"Copied evaluation file: {file_name}")
+        print(f"✓ Copied README.md to model directory")
     else:
         raise FileNotFoundError(f"Main README.md not found at {main_readme_path}. Please ensure the comprehensive README.md exists.")
 
@@ -148,91 +208,49 @@ def upload_to_huggingface(
 
 
 def create_inference_script(output_dir: str, model_name: str):
-    """Create an inference script for easy model usage."""
+    inference_script = '''#!/usr/bin/env python3
+from transformers import pipeline
+import sys
+
+def main():
+    print("Loading model...")
+    classifier = pipeline("text-classification", model=".", device=-1)
+    print("Model loaded successfully!\\n")
     
-    inference_script = f'''"""
-Inference script for {model_name}
-"""
-
-import torch
-import torch.nn as nn
-import json
-from transformers import AutoTokenizer, AutoModel
-
-
-class BERTBinaryClassifier(nn.Module):
-    def __init__(self, model_name="{model_name}"):
-        super().__init__()
-        self.bert = AutoModel.from_pretrained(model_name)
+    if len(sys.argv) > 1:
+        input_text = " ".join(sys.argv[1:])
+        result = classifier(input_text)[0]
+        print(f"Text: {input_text}")
+        print(f"Label: {result['label']}")
+        print(f"Confidence: {result['score']:.2%}")
+    else:
+        print("Garbled Text Detector - Testing with sample texts")
+        print("=" * 70)
         
-        # Load dropout configuration
-        with open("dropout_config.json", "r") as f:
-            dropout_config = json.load(f)
+        sample_texts = [
+            "This is a normal, well-formed text sample.",
+            "The quick brown fox jumps over the lazy dog.",
+            "H3ll0 w0rld! Th1s 1s g4rbl3d t3xt.",
+            "Xkcd fjkdsl lorem ipsum dfkjsld dolor sit.",
+            "I love this amazing product! It works great.",
+            "asdfkj lksdjf weroi woeirj woeiruwo eiru",
+            "Machine learning models are powerful tools."
+        ]
         
-        self.dropout_layer = nn.Dropout(dropout_config["dropout_rate"])
-        self.classifier = nn.Linear(self.bert.config.hidden_size, 2)
+        results = classifier(sample_texts)
         
-        # Load classification head weights
-        classifier_weights = torch.load("classifier_head.pt", map_location="cpu")
-        self.classifier.load_state_dict(classifier_weights)
-    
-    def forward(self, input_ids, attention_mask):
-        outputs = self.bert(input_ids=input_ids, attention_mask=attention_mask)
-        pooled_output = outputs.pooler_output
-        output = self.dropout_layer(pooled_output)
-        logits = self.classifier(output)
-        return logits
-
-
-def predict(text, model, tokenizer, device="cpu"):
-    """Make prediction on a single text."""
-    model.eval()
-    model.to(device)
-    
-    inputs = tokenizer(
-        text, 
-        return_tensors="pt", 
-        truncation=True, 
-        padding=True, 
-        max_length=512
-    )
-    inputs = {{k: v.to(device) for k, v in inputs.items()}}
-    
-    with torch.no_grad():
-        logits = model(**inputs)
-        probabilities = torch.softmax(logits, dim=1)
-        predicted_class = torch.argmax(probabilities, dim=1).item()
-        confidence = probabilities[0][predicted_class].item()
-    
-    return {{
-        "text": text,
-        "predicted_class": predicted_class,
-        "confidence": confidence,
-        "probabilities": probabilities[0].cpu().numpy().tolist()
-    }}
-
+        for text, result in zip(sample_texts, results):
+            print(f"\\nText: {text[:60]}..." if len(text) > 60 else f"\\nText: {text}")
+            print(f"  → {result['label']} (confidence: {result['score']:.2%})")
+        
+        print("\\n" + "=" * 70)
+        print("\\nUsage: python inference.py [text to classify]")
+        print("Example: python inference.py \\"Check if this text is garbled\\"")
 
 if __name__ == "__main__":
-    # Load model and tokenizer
-    tokenizer = AutoTokenizer.from_pretrained("{model_name}")
-    model = BERTBinaryClassifier("{model_name}")
-    
-    # Example usage
-    sample_texts = [
-        "This is a normal, well-formed text sample.",
-        "H3ll0 w0rld! Th1s 1s g4rbl3d t3xt.",
-        "I love this amazing product!",
-        "Xkcd lorem ipsum dolor sit amet."
-    ]
-    
-    for text in sample_texts:
-        result = predict(text, model, tokenizer)
-        class_label = "GARBLED" if result['predicted_class'] == 1 else "NORMAL"
-        print(f"Text: {{result['text']}}")
-        print(f"Predicted class: {{result['predicted_class']}} ({{class_label}})")
-        print(f"Confidence: {{result['confidence']:.4f}}")
-        print("-" * 50)
+    main()
 '''
     
     with open(os.path.join(output_dir, "inference.py"), "w") as f:
         f.write(inference_script)
+    print(f"Created simple inference script using pipeline API: {output_dir}/inference.py")

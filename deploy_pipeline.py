@@ -34,7 +34,6 @@ def load_deployment_config(config_path: str = "src/deployment/config.yaml") -> d
     return load_config(config_path)
 
 def find_latest_checkpoint(model_dir: str = "data/model") -> str:
-    """Find the latest model checkpoint."""
     model_path = Path(model_dir)
     if not model_path.exists():
         raise FileNotFoundError(f"Model directory {model_dir} not found")
@@ -43,8 +42,12 @@ def find_latest_checkpoint(model_dir: str = "data/model") -> str:
     if not checkpoints:
         raise FileNotFoundError(f"No checkpoints found in {model_dir}")
     
-    # Sort by modification time and return the latest
-    latest_checkpoint = max(checkpoints, key=os.path.getmtime)
+    best_checkpoints = [ckpt for ckpt in checkpoints if 'best' in ckpt.name.lower()]
+    if best_checkpoints:
+        latest_checkpoint = max(best_checkpoints, key=os.path.getmtime)
+    else:
+        latest_checkpoint = max(checkpoints, key=os.path.getmtime)
+    
     return str(latest_checkpoint)
 
 def deploy_model(
